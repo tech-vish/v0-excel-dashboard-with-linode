@@ -192,13 +192,19 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                   ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => value.toFixed(1) + "%"}
+                formatter={(value: number) => [value.toFixed(1) + "%", "Share"]}
                 contentStyle={{
                   background: "#1c1f2a",
                   border: "1px solid #272b3a",
                   borderRadius: "8px",
-                  color: "#e4e6f0",
                   fontSize: "12px",
+                }}
+                itemStyle={{
+                  color: "#e4e6f0",
+                }}
+                labelStyle={{
+                  color: "#9a9eb5",
+                  marginBottom: "4px",
                 }}
               />
               <Legend
