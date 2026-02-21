@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+
+function getS3Client() {
+  return new S3Client({
+    region: process.env.LINODE_REGION || "ap-south-1",
+    endpoint: `https://${process.env.LINODE_REGION || "ap-south-1"}.linodeobjects.com`,
+    credentials: {
+      accessKeyId: process.env.LINODE_ACCESS_KEY || "",
+      secretAccessKey: process.env.LINODE_SECRET_KEY || "",
+    },
+    forcePathStyle: false,
+  });
+}
+
+// POST - Upload Excel file to Linode Object Storage
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (!/\.xlsx?$/i.test(file.name)) {
+      return NextResponse.json(
+        { error: "Only .xlsx or .xls files are allowed" },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const s3 = getS3Client();
+    const bucket = process.env.LINODE_BUCKET || "";
+    const key = process.env.LINODE_OBJECT_KEY || "data.xlsx";
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: "File uploaded successfully to Linode Object Storage",
+      fileName: file.name,
+      size: file.size,
+      uploadedAt: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("Upload error:", message);
+    return NextResponse.json(
+      { error: "Upload failed: " + message },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - Download Excel file from Linode Object Storage
+export async function GET() {
+  try {
+    const s3 = getS3Client();
+    const bucket = process.env.LINODE_BUCKET || "";
+    const key = process.env.LINODE_OBJECT_KEY || "data.xlsx";
+
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+
+    const response = await s3.send(command);
+
+    if (!response.Body) {
+      return NextResponse.json(
+        { error: "No file found in storage" },
+        { status: 404 }
+      );
+    }
+
+    const chunks: Uint8Array[] = [];
+    const reader = response.Body.transformToWebStream().getReader();
+    let done = false;
+
+    while (!done) {
+      const result = await reader.read();
+      done = result.done;
+      if (result.value) {
+        chunks.push(result.value);
+      }
+    }
+
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const merged = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    const base64 = Buffer.from(merged).toString("base64");
+
+    return NextResponse.json({
+      success: true,
+      data: base64,
+      contentType:
+        response.ContentType ||
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      lastModified: response.LastModified?.toISOString(),
+      size: response.ContentLength,
+    });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("Download error:", message);
+    return NextResponse.json(
+      { error: "Failed to load from Linode: " + message },
+      { status: 500 }
+    );
+  }
+}
