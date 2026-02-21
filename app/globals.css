@@ -3,65 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── Light theme (default) ───────────── */
 :root {
-  --background: #f5f6f8;
-  --foreground: #1a1d26;
-  --card: #ffffff;
-  --card-foreground: #1a1d26;
-  --popover: #ffffff;
-  --popover-foreground: #1a1d26;
-  --primary: #b8902e;
-  --primary-foreground: #ffffff;
-  --secondary: #eef0f4;
-  --secondary-foreground: #1a1d26;
-  --muted: #eef0f4;
-  --muted-foreground: #6b6f85;
-  --accent: #e5e8ee;
-  --accent-foreground: #1a1d26;
-  --destructive: #dc3545;
-  --destructive-foreground: #ffffff;
-  --border: #d8dbe4;
-  --input: #d8dbe4;
-  --ring: #b8902e;
-  --chart-1: #3b7ddd;
-  --chart-2: #1fad65;
-  --chart-3: #e67e22;
-  --chart-4: #7c5cbf;
-  --chart-5: #0ea5c9;
-  --radius: 0.625rem;
-  --sidebar: #eef0f4;
-  --sidebar-foreground: #1a1d26;
-  --sidebar-primary: #b8902e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e5e8ee;
-  --sidebar-accent-foreground: #1a1d26;
-  --sidebar-border: #d8dbe4;
-  --sidebar-ring: #b8902e;
-
-  --gold: #b8902e;
-  --gold-dim: rgba(184,144,46,.1);
-  --green: #1fad65;
-  --green-dim: rgba(31,173,101,.08);
-  --red: #dc3545;
-  --red-dim: rgba(220,53,69,.08);
-  --blue: #3b7ddd;
-  --blue-dim: rgba(59,125,221,.08);
-  --surface: #ffffff;
-  --surface2: #eef0f4;
-  --surface3: #e5e8ee;
-  --bg2: #f0f1f5;
-  --text2: #555a6e;
-  --text3: #9a9eb5;
-  --grid-stroke: #e2e4ea;
-  --tooltip-bg: #ffffff;
-  --tooltip-border: #d8dbe4;
-  --tooltip-text: #1a1d26;
-  --tooltip-muted: #6b6f85;
-}
-
-/* ── Dark theme ─────────────────────── */
-.dark {
   --background: #0b0d11;
   --foreground: #e4e6f0;
   --card: #161921;
@@ -86,6 +28,7 @@
   --chart-3: #fb923c;
   --chart-4: #a78bfa;
   --chart-5: #22d3ee;
+  --radius: 0.625rem;
   --sidebar: #10131a;
   --sidebar-foreground: #e4e6f0;
   --sidebar-primary: #d4a853;
@@ -109,11 +52,6 @@
   --bg2: #10131a;
   --text2: #9a9eb5;
   --text3: #6b6f85;
-  --grid-stroke: #1e2130;
-  --tooltip-bg: #1c1f2a;
-  --tooltip-border: #272b3a;
-  --tooltip-text: #e4e6f0;
-  --tooltip-muted: #9a9eb5;
 }
 
 @theme inline {
