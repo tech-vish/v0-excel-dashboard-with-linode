@@ -5,21 +5,60 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 
+// Linode region slug -> actual S3 endpoint mapping
+// Some Linode regions have different S3 endpoint hostnames than their region slug
+const LINODE_ENDPOINT_MAP: Record<string, string> = {
+  "ap-south-1": "https://ap-south-1.linodeobjects.com",
+  "ap-south": "https://in-maa.linodeobjects.com",
+  "in-maa": "https://in-maa.linodeobjects.com",
+  "in-maa-1": "https://in-maa.linodeobjects.com",
+  "us-east-1": "https://us-east-1.linodeobjects.com",
+  "us-southeast-1": "https://us-southeast-1.linodeobjects.com",
+  "eu-central-1": "https://eu-central-1.linodeobjects.com",
+  "jp-osa-1": "https://jp-osa-1.linodeobjects.com",
+  "us-iad-1": "https://us-iad-1.linodeobjects.com",
+  "fr-par-1": "https://fr-par-1.linodeobjects.com",
+  "us-ord-1": "https://us-ord-1.linodeobjects.com",
+  "us-sea-1": "https://us-sea-1.linodeobjects.com",
+  "us-lax-1": "https://us-lax-1.linodeobjects.com",
+  "us-mia-1": "https://us-mia-1.linodeobjects.com",
+  "id-cgk-1": "https://id-cgk-1.linodeobjects.com",
+  "se-sto-1": "https://se-sto-1.linodeobjects.com",
+  "nl-ams-1": "https://nl-ams-1.linodeobjects.com",
+  "es-mad-1": "https://es-mad-1.linodeobjects.com",
+  "gb-lon-1": "https://gb-lon-1.linodeobjects.com",
+  "it-mil-1": "https://it-mil-1.linodeobjects.com",
+  "br-gru-1": "https://br-gru-1.linodeobjects.com",
+  "sg-sin-1": "https://sg-sin-1.linodeobjects.com",
+  "jp-tyo-3": "https://jp-tyo-3.linodeobjects.com",
+  "au-mel-1": "https://au-mel-1.linodeobjects.com",
+};
+
+function resolveEndpoint(region: string): string {
+  const trimmed = region.trim().toLowerCase();
+  // If the user provided a full URL, use it directly
+  if (trimmed.startsWith("https://")) return trimmed;
+  // Check the map
+  if (LINODE_ENDPOINT_MAP[trimmed]) return LINODE_ENDPOINT_MAP[trimmed];
+  // Fallback: construct from region
+  return `https://${trimmed}.linodeobjects.com`;
+}
+
 function getS3Client() {
-  const region = process.env.LINODE_REGION || "ap-south-1";
-  const accessKeyId = process.env.LINODE_ACCESS_KEY || "";
-  const secretAccessKey = process.env.LINODE_SECRET_KEY || "";
+  const region = (process.env.LINODE_REGION || "ap-south-1").trim();
+  const accessKeyId = (process.env.LINODE_ACCESS_KEY || "").trim();
+  const secretAccessKey = (process.env.LINODE_SECRET_KEY || "").trim();
+  const endpoint = resolveEndpoint(region);
 
   console.log("[v0] S3 Config - region:", region);
-  console.log("[v0] S3 Config - endpoint:", `https://${region}.linodeobjects.com`);
-  console.log("[v0] S3 Config - accessKeyId present:", !!accessKeyId, "length:", accessKeyId.length);
-  console.log("[v0] S3 Config - secretAccessKey present:", !!secretAccessKey, "length:", secretAccessKey.length);
+  console.log("[v0] S3 Config - resolved endpoint:", endpoint);
+  console.log("[v0] S3 Config - accessKeyId length:", accessKeyId.length);
   console.log("[v0] S3 Config - bucket:", process.env.LINODE_BUCKET);
   console.log("[v0] S3 Config - objectKey:", process.env.LINODE_OBJECT_KEY);
 
   return new S3Client({
-    region,
-    endpoint: `https://${region}.linodeobjects.com`,
+    region: "us-east-1", // dummy region - Linode ignores this, endpoint is what matters
+    endpoint,
     credentials: {
       accessKeyId,
       secretAccessKey,
