@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Upload, Download, Loader2, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "./theme-toggle";
 import type { SheetData } from "@/lib/data-helpers";
 import { processWorkbook } from "@/lib/excel-processor";
 
@@ -107,6 +108,11 @@ export function UploadScreen({ onDataLoaded }: UploadScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-background">
+      {/* Theme Toggle in top-right corner */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      
       <div
         className={`w-[460px] max-w-[90vw] rounded-xl border-2 border-dashed p-12 text-center transition-all cursor-pointer ${
           dragOver
