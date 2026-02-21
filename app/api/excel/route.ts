@@ -5,10 +5,25 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 
-// Linode Object Storage uses virtual-hosted style endpoints:
-// https://{bucket}.{region}.linodeobjects.com
-// The S3 client endpoint should be https://{region}.linodeobjects.com
-// with forcePathStyle: false so it prepends the bucket as a subdomain.
+// Linode Object Storage endpoint format:
+// Virtual-hosted style: https://{bucket}.{region}.linodeobjects.com/{key}
+// The S3 SDK endpoint must be https://{region}.linodeobjects.com
+// and forcePathStyle must be false so SDK prepends bucket as subdomain.
+//
+// IMPORTANT: LINODE_REGION must match the cluster your bucket lives on.
+// e.g. "in-maa-1" for India/Chennai, "us-east-1" for Newark, etc.
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null) {
+    const e = error as Record<string, unknown>;
+    if (e.message) return String(e.message);
+    if (e.Code) return String(e.Code);
+    if (e.code) return String(e.code);
+    return JSON.stringify(error);
+  }
+  return String(error);
+}
 
 function getS3Client() {
   const region = (process.env.LINODE_REGION || "in-maa-1").trim();
@@ -16,13 +31,15 @@ function getS3Client() {
   const secretAccessKey = (process.env.LINODE_SECRET_KEY || "").trim();
   const bucket = (process.env.LINODE_BUCKET || "").trim();
 
-  // Endpoint format: https://{region}.linodeobjects.com
+  // The SDK endpoint is the cluster base URL (without the bucket)
   const endpoint = `https://${region}.linodeobjects.com`;
 
   console.log("[v0] S3 Config - region:", region);
   console.log("[v0] S3 Config - endpoint:", endpoint);
-  console.log("[v0] S3 Config - full URL will be:", `https://${bucket}.${region}.linodeobjects.com`);
+  console.log("[v0] S3 Config - virtual-hosted URL:", `https://${bucket}.${region}.linodeobjects.com`);
+  console.log("[v0] S3 Config - accessKeyId (first 4 chars):", accessKeyId.substring(0, 4) + "...");
   console.log("[v0] S3 Config - accessKeyId length:", accessKeyId.length);
+  console.log("[v0] S3 Config - secretAccessKey length:", secretAccessKey.length);
   console.log("[v0] S3 Config - bucket:", bucket);
   console.log("[v0] S3 Config - objectKey:", process.env.LINODE_OBJECT_KEY);
 
@@ -33,7 +50,7 @@ function getS3Client() {
       accessKeyId,
       secretAccessKey,
     },
-    forcePathStyle: false, // virtual-hosted style: {bucket}.{region}.linodeobjects.com
+    forcePathStyle: false,
   });
 }
 
@@ -77,9 +94,9 @@ export async function POST(request: NextRequest) {
       uploadedAt: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Upload error:", message);
+    const message = getErrorMessage(error);
+    console.error("[v0] Upload error:", message);
+    console.error("[v0] Upload error full:", JSON.stringify(error, null, 2));
     return NextResponse.json(
       { error: "Upload failed: " + message },
       { status: 500 }
@@ -140,9 +157,9 @@ export async function GET() {
       size: response.ContentLength,
     });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Download error:", message);
+    const message = getErrorMessage(error);
+    console.error("[v0] Download error:", message);
+    console.error("[v0] Download error full:", JSON.stringify(error, null, 2));
     return NextResponse.json(
       { error: "Failed to load from Linode: " + message },
       { status: 500 }
