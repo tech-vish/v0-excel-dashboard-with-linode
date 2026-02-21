@@ -6,14 +6,25 @@ import {
 } from "@aws-sdk/client-s3";
 
 function getS3Client() {
+  const region = process.env.LINODE_REGION || "ap-south-1";
+  const accessKeyId = process.env.LINODE_ACCESS_KEY || "";
+  const secretAccessKey = process.env.LINODE_SECRET_KEY || "";
+
+  console.log("[v0] S3 Config - region:", region);
+  console.log("[v0] S3 Config - endpoint:", `https://${region}.linodeobjects.com`);
+  console.log("[v0] S3 Config - accessKeyId present:", !!accessKeyId, "length:", accessKeyId.length);
+  console.log("[v0] S3 Config - secretAccessKey present:", !!secretAccessKey, "length:", secretAccessKey.length);
+  console.log("[v0] S3 Config - bucket:", process.env.LINODE_BUCKET);
+  console.log("[v0] S3 Config - objectKey:", process.env.LINODE_OBJECT_KEY);
+
   return new S3Client({
-    region: process.env.LINODE_REGION || "ap-south-1",
-    endpoint: `https://${process.env.LINODE_REGION || "ap-south-1"}.linodeobjects.com`,
+    region,
+    endpoint: `https://${region}.linodeobjects.com`,
     credentials: {
-      accessKeyId: process.env.LINODE_ACCESS_KEY || "",
-      secretAccessKey: process.env.LINODE_SECRET_KEY || "",
+      accessKeyId,
+      secretAccessKey,
     },
-    forcePathStyle: false,
+    forcePathStyle: true,
   });
 }
 
