@@ -142,7 +142,7 @@ export function UploadScreen({ onDataLoaded }: UploadScreenProps) {
           {" file here"}
         </p>
         <Button
-          className="bg-gradient-to-br from-[var(--gold)] to-[#e8c960] text-[#0b0d11] font-semibold hover:opacity-85"
+          className="bg-gradient-to-br from-[var(--gold)] to-[var(--primary)] text-primary-foreground font-semibold hover:opacity-85"
           onClick={(e) => {
             e.stopPropagation();
             fileInputRef.current?.click();

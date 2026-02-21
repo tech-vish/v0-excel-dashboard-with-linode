@@ -35,7 +35,7 @@ function highlightText(text: string, term: string): React.ReactNode {
     regex.test(part) ? (
       <span
         key={i}
-        className="bg-[rgba(212,168,83,0.2)] text-foreground rounded-sm px-0.5"
+        className="bg-[var(--gold-dim)] text-foreground rounded-sm px-0.5"
       >
         {part}
       </span>

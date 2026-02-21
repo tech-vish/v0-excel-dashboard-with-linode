@@ -4,6 +4,62 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --background: #ffffff;
+  --foreground: #0f0f23;
+  --card: #f8f9fa;
+  --card-foreground: #0f0f23;
+  --popover: #ffffff;
+  --popover-foreground: #0f0f23;
+  --primary: #d4a853;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #d4a853;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #06b6d4;
+  --chart-1-rgb: 59, 130, 246;
+  --chart-2-rgb: 16, 185, 129;
+  --chart-3-rgb: 245, 158, 11;
+  --chart-4-rgb: 139, 92, 246;
+  --chart-5-rgb: 6, 182, 212;
+  --radius: 0.625rem;
+  --sidebar: #f8f9fa;
+  --sidebar-foreground: #0f0f23;
+  --sidebar-primary: #d4a853;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #d4a853;
+
+  --gold: #d4a853;
+  --gold-dim: rgba(212,168,83,.1);
+  --green: #10b981;
+  --green-dim: rgba(16,185,129,.1);
+  --red: #dc2626;
+  --red-dim: rgba(220,38,38,.1);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59,130,246,.1);
+  --surface: #f8f9fa;
+  --surface2: #f1f5f9;
+  --surface3: #e2e8f0;
+  --bg2: #ffffff;
+  --text2: #64748b;
+  --text3: #94a3b8;
+}
+
+.dark {
   --background: #0b0d11;
   --foreground: #e4e6f0;
   --card: #161921;
@@ -28,7 +84,11 @@
   --chart-3: #fb923c;
   --chart-4: #a78bfa;
   --chart-5: #22d3ee;
-  --radius: 0.625rem;
+  --chart-1-rgb: 91, 156, 245;
+  --chart-2-rgb: 61, 214, 140;
+  --chart-3-rgb: 251, 146, 60;
+  --chart-4-rgb: 167, 139, 250;
+  --chart-5-rgb: 34, 211, 238;
   --sidebar: #10131a;
   --sidebar-foreground: #e4e6f0;
   --sidebar-primary: #d4a853;
@@ -128,8 +188,11 @@
   background: var(--background);
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #333850;
+  background: var(--border);
   border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }
 .scrollbar-thin::-webkit-scrollbar-corner {
   background: var(--background);

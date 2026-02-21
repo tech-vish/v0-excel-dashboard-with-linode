@@ -93,9 +93,9 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
     fill:
       marginRow && typeof marginRow[i + 1] === "number"
         ? (marginRow[i + 1] as number) < 0
-          ? "#ef6060"
-          : "#3dd68c"
-        : "#3dd68c",
+          ? "var(--red)"
+          : "var(--green)"
+        : "var(--green)",
   }));
 
   const shareData = CHANNELS.map((ch, i) => ({
@@ -140,18 +140,18 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
             <BarChart data={salesData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e2130"
+                stroke="var(--border)"
                 vertical={false}
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v) => fmtINR(v)}
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -182,7 +182,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                 outerRadius={110}
                 dataKey="value"
                 paddingAngle={2}
-                stroke="#161921"
+                stroke="var(--surface)"
                 strokeWidth={2}
               >
                 {shareData
@@ -194,21 +194,21 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
               <Tooltip
                 formatter={(value: number) => [value.toFixed(1) + "%", "Share"]}
                 contentStyle={{
-                  background: "#1c1f2a",
-                  border: "1px solid #272b3a",
+                  background: "var(--surface2)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}
                 itemStyle={{
-                  color: "#e4e6f0",
+                  color: "var(--foreground)",
                 }}
                 labelStyle={{
-                  color: "#9a9eb5",
+                  color: "var(--text2)",
                   marginBottom: "4px",
                 }}
               />
               <Legend
-                wrapperStyle={{ fontSize: "11px", color: "#9a9eb5" }}
+                wrapperStyle={{ fontSize: "11px", color: "var(--text2)" }}
                 iconSize={10}
               />
             </PieChart>
@@ -222,18 +222,18 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
             <BarChart data={marginData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e2130"
+                stroke="var(--border)"
                 vertical={false}
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v) => v + "%"}
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -260,20 +260,20 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
             <BarChart data={top10States} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e2130"
+                stroke="var(--border)"
                 horizontal={false}
               />
               <XAxis
                 type="number"
                 tickFormatter={(v) => fmtINR(v)}
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 10, fill: "#9a9eb5" }}
+                tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
                 width={100}
@@ -285,7 +285,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
               />
               <Bar
                 dataKey="value"
-                fill="#5b9cf5"
+                fill="var(--chart-1)"
                 radius={[0, 6, 6, 0]}
               />
             </BarChart>

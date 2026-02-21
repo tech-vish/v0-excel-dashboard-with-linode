@@ -42,14 +42,14 @@ const COLOR_MAP: Record<
     bg: "var(--red-dim)",
   },
   purple: {
-    border: "#a78bfa",
-    text: "#a78bfa",
-    bg: "rgba(167,139,250,.1)",
+    border: "var(--chart-4)",
+    text: "var(--chart-4)",
+    bg: "rgba(var(--chart-4-rgb), 0.1)",
   },
   cyan: {
-    border: "#22d3ee",
-    text: "#22d3ee",
-    bg: "rgba(34,211,238,.1)",
+    border: "var(--chart-5)",
+    text: "var(--chart-5)",
+    bg: "rgba(var(--chart-5-rgb), 0.1)",
   },
 };
 
