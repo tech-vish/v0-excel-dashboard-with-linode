@@ -1,29 +1,49 @@
 "use client";
 
+import Image from "next/image";
 import { ThemeToggle } from "./theme-toggle";
+import { MonthSelector, MonthInfo } from "./month-selector";
 
 interface TopBarProps {
-  period: string;
+  months: MonthInfo[];
+  activeMonth: string;
+  onMonthChange: (month: string) => void;
+  loadingMonth?: string | null;
   loadedAt: string;
 }
 
-export function TopBar({ period, loadedAt }: TopBarProps) {
+export function TopBar({
+  months,
+  activeMonth,
+  onMonthChange,
+  loadingMonth,
+  loadedAt
+}: TopBarProps) {
   return (
-    <header className="flex items-center gap-4 px-7 py-3.5 bg-[var(--surface)] border-b border-border sticky top-0 z-50">
-      <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[9px] bg-gradient-to-br from-[var(--gold)] to-[var(--primary)] font-extrabold text-[15px] text-primary-foreground tracking-tight">
-        IV
-      </div>
-      <h1 className="text-base font-semibold text-foreground">
-        Indian Art Villa
-      </h1>
-      <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-[var(--gold-dim)] text-[var(--gold)] border border-[rgba(212,168,83,0.2)]">
-        {period}
-      </span>
-      <div className="ml-auto flex items-center gap-3">
-        <span className="text-[11px] text-muted-foreground">
-          {loadedAt}
-        </span>
-        <ThemeToggle />
+    <header className="flex flex-col border-b border-border bg-[var(--surface)] sticky top-0 z-50">
+      <div className="flex items-center gap-4 px-7 py-3">
+        <div className="flex h-[56px] w-[56px] items-center justify-center rounded-[12px] overflow-hidden bg-white border border-border shrink-0">
+          <Image src="/iav_logo.jpeg" alt="Indian Art Villa" width={56} height={56} className="object-contain" />
+        </div>
+        <h1 className="text-sm font-bold text-foreground mr-4">
+          Indian Art Villa
+        </h1>
+
+        <div className="flex-1 max-w-[60%] overflow-hidden">
+          <MonthSelector
+            months={months}
+            activeMonth={activeMonth}
+            onMonthChange={onMonthChange}
+            loadingMonth={loadingMonth}
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">
+            {loadedAt}
+          </span>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

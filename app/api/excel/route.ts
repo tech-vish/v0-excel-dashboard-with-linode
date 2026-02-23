@@ -1,119 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import * as XLSX from "xlsx";
+import { getConfig, signRequest } from "@/lib/s3-signer";
+import { detectPeriod, periodToKey } from "@/lib/data-helpers";
 
-// ─────────────────────────────────────────────────
-// Linode Object Storage helper using raw S3 v4 signing
-// This bypasses AWS SDK issues with Linode entirely.
-// Endpoint: https://{bucket}.{region}.linodeobjects.com/{key}
-// ─────────────────────────────────────────────────
-
-function getConfig() {
-  const region = (process.env.LINODE_REGION || "in-maa-1").trim();
-  const accessKey = (process.env.LINODE_ACCESS_KEY || "").trim();
-  const secretKey = (process.env.LINODE_SECRET_KEY || "").trim();
-  const bucket = (process.env.LINODE_BUCKET || "").trim();
-  const objectKey = (process.env.LINODE_OBJECT_KEY || "data.xlsx").trim();
-  const host = `${bucket}.${region}.linodeobjects.com`;
-  const baseUrl = `https://${host}`;
-
-  console.log("[v0] Config - region:", region);
-  console.log("[v0] Config - host:", host);
-  console.log("[v0] Config - baseUrl:", baseUrl);
-  console.log("[v0] Config - accessKey first4:", accessKey.substring(0, 4));
-  console.log("[v0] Config - bucket:", bucket);
-  console.log("[v0] Config - objectKey:", objectKey);
-
-  return { region, accessKey, secretKey, bucket, objectKey, host, baseUrl };
-}
+export const runtime = "nodejs";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (typeof error === "object" && error !== null) {
-    const e = error as Record<string, unknown>;
-    if (e.message) return String(e.message);
-    if (e.Code) return String(e.Code);
-    if (e.code) return String(e.code);
-    return JSON.stringify(error);
-  }
   return String(error);
-}
-
-// ─── AWS Signature V4 helpers ────────────────────
-
-function hmacSHA256(key: Buffer | string, data: string): Buffer {
-  return crypto.createHmac("sha256", key).update(data, "utf8").digest();
-}
-
-function sha256Hex(data: Buffer | string): string {
-  return crypto.createHash("sha256").update(data).digest("hex");
-}
-
-function getSignatureKey(secretKey: string, dateStamp: string, region: string, service: string): Buffer {
-  const kDate = hmacSHA256(Buffer.from("AWS4" + secretKey, "utf8"), dateStamp);
-  const kRegion = hmacSHA256(kDate, region);
-  const kService = hmacSHA256(kRegion, service);
-  const kSigning = hmacSHA256(kService, "aws4_request");
-  return kSigning;
-}
-
-function signRequest(
-  method: string,
-  host: string,
-  path: string,
-  accessKey: string,
-  secretKey: string,
-  region: string,
-  body: Buffer | null,
-  contentType?: string
-): Record<string, string> {
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
-  const dateStamp = amzDate.substring(0, 8);
-  const service = "s3";
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-  const payloadHash = body ? sha256Hex(body) : sha256Hex("");
-
-  const headers: Record<string, string> = {
-    host: host,
-    "x-amz-content-sha256": payloadHash,
-    "x-amz-date": amzDate,
-  };
-
-  if (contentType) {
-    headers["content-type"] = contentType;
-  }
-
-  const signedHeaderKeys = Object.keys(headers).sort();
-  const signedHeaders = signedHeaderKeys.join(";");
-  const canonicalHeaders = signedHeaderKeys.map((k) => `${k}:${headers[k]}\n`).join("");
-
-  const canonicalRequest = [
-    method,
-    "/" + path,
-    "", // no query string
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join("\n");
-
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    credentialScope,
-    sha256Hex(canonicalRequest),
-  ].join("\n");
-
-  const signingKey = getSignatureKey(secretKey, dateStamp, region, service);
-  const signature = hmacSHA256(signingKey, stringToSign).toString("hex");
-
-  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  return {
-    Authorization: authorization,
-    "x-amz-content-sha256": payloadHash,
-    "x-amz-date": amzDate,
-    ...(contentType ? { "Content-Type": contentType } : {}),
-  };
 }
 
 // ─── POST: Upload Excel to Linode ────────────────
@@ -134,34 +28,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Server-side detection to determine key
+    const wb = XLSX.read(buffer, { type: "buffer", bookSheets: true });
+    const period = detectPeriod(wb.SheetNames);
+    const monthKey = periodToKey(period);
+    const objectKey = `months/${monthKey}.xlsx`;
+
     const config = getConfig();
-    const body = Buffer.from(await file.arrayBuffer());
     const contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     const headers = signRequest(
       "PUT",
       config.host,
-      config.objectKey,
+      objectKey,
       config.accessKey,
       config.secretKey,
       config.region,
-      body,
+      buffer,
       contentType
     );
 
-    const url = `${config.baseUrl}/${config.objectKey}`;
+    const url = `${config.baseUrl}/${objectKey}`;
     console.log("[v0] Uploading to:", url);
 
     const res = await fetch(url, {
       method: "PUT",
       headers,
-      body,
+      body: buffer,
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("[v0] Upload response status:", res.status);
-      console.error("[v0] Upload response body:", errText);
       return NextResponse.json(
         { error: `Upload failed (${res.status}): ${errText}` },
         { status: 500 }
@@ -171,6 +71,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "File uploaded successfully to Linode Object Storage",
+      period,
+      key: monthKey,
       fileName: file.name,
       size: file.size,
       uploadedAt: new Date().toISOString(),
@@ -187,57 +89,30 @@ export async function POST(request: NextRequest) {
 
 // ─── GET: Download Excel from Linode ─────────────
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const config = getConfig();
+    const { searchParams } = new URL(request.url);
+    let month = searchParams.get("month");
 
-    const headers = signRequest(
-      "GET",
-      config.host,
-      config.objectKey,
-      config.accessKey,
-      config.secretKey,
-      config.region,
-      null
-    );
-
-    const url = `${config.baseUrl}/${config.objectKey}`;
-    console.log("[v0] Downloading from:", url);
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers,
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[v0] Download response status:", res.status);
-      console.error("[v0] Download response body:", errText);
-
-      if (res.status === 404) {
-        return NextResponse.json(
-          { error: "No file found in storage" },
-          { status: 404 }
-        );
+    // If no month provided, we first list and pick the latest
+    // But for now, we'll implement a fallback to the env key if month is missing
+    // or call the internal list logic.
+    if (!month) {
+      const listRes = await fetch(new URL("/api/excel/list", request.url).toString());
+      const listData = await listRes.json();
+      if (listData.success && listData.months.length > 0) {
+        month = listData.months[0].monthKey;
+      } else {
+        // Fallback to legacy key if env key is defined
+        const legacyKey = (process.env.LINODE_OBJECT_KEY || "data.xlsx").trim();
+        return await fetchAndReturnS3(config, legacyKey);
       }
-      return NextResponse.json(
-        { error: `Download failed (${res.status}): ${errText}` },
-        { status: 500 }
-      );
     }
 
-    const arrayBuffer = await res.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const objectKey = `months/${month}.xlsx`;
+    return await fetchAndReturnS3(config, objectKey);
 
-    return NextResponse.json({
-      success: true,
-      data: base64,
-      contentType:
-        res.headers.get("content-type") ||
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      lastModified: res.headers.get("last-modified") || undefined,
-      size: arrayBuffer.byteLength,
-    });
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     console.error("[v0] Download error:", message);
@@ -246,4 +121,37 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+async function fetchAndReturnS3(config: any, objectKey: string) {
+  const headers = signRequest(
+    "GET",
+    config.host,
+    objectKey,
+    config.accessKey,
+    config.secretKey,
+    config.region,
+    null
+  );
+
+  const url = `${config.baseUrl}/${objectKey}`;
+  const res = await fetch(url, { method: "GET", headers });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return NextResponse.json({ error: "No file found" }, { status: 404 });
+    }
+    const txt = await res.text();
+    throw new Error(`S3 fetch failed (${res.status}): ${txt}`);
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  return NextResponse.json({
+    success: true,
+    data: base64,
+    key: objectKey.replace("months/", "").replace(".xlsx", ""),
+    size: arrayBuffer.byteLength,
+  });
 }

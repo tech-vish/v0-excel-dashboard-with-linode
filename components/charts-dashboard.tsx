@@ -16,9 +16,11 @@ import {
 import type { SheetData } from "@/lib/data-helpers";
 import { findRow, fmtINR } from "@/lib/data-helpers";
 import { CHANNELS, CHANNEL_COLORS } from "@/lib/sheet-config";
+import type { DrillDown } from "@/app/page";
 
 interface ChartsDashboardProps {
   data: SheetData;
+  onDrillDown: (d: DrillDown) => void;
 }
 
 function ChartCard({
@@ -61,20 +63,52 @@ const CustomTooltip = ({
         <p className="text-sm font-semibold text-foreground">
           {formatter ? formatter(payload[0].value) : payload[0].value}
         </p>
+        <p className="text-[10px] text-[var(--gold)] mt-1">Click to view source ↗</p>
       </div>
     );
   }
   return null;
 };
 
-export function ChartsDashboard({ data }: ChartsDashboardProps) {
+const PieCustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number }>;
+}) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className="rounded-lg border border-border px-3 py-2 shadow-lg text-xs"
+        style={{
+          background: "var(--surface2)",
+          color: "var(--foreground)",
+        }}
+      >
+        <p className="text-muted-foreground mb-1">{payload[0].name}</p>
+        <p className="font-semibold">{payload[0].value.toFixed(1)}%</p>
+        <p className="text-[10px] text-[var(--gold)] mt-1">Click to view source ↗</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Shortened display labels for long channel names used in charts
+const CHART_LABEL: Record<string, string> = {
+  "INDIAN ART VILLA.IN": "IAV.IN",
+  "INDIAN ART VILLA.COM": "IAV.COM",
+};
+
+export function ChartsDashboard({ data, onDrillDown }: ChartsDashboardProps) {
   const pct = data["% Sheet"] || [];
   const salesRow = findRow(pct, "Sales (Rs.)");
   const marginRow = findRow(pct, "Margin %");
   const shareRow = findRow(pct, "Share In Net Sale");
 
   const salesData = CHANNELS.map((ch, i) => ({
-    name: ch,
+    name: CHART_LABEL[ch] ?? ch,
     value: salesRow
       ? typeof salesRow[i + 1] === "number"
         ? (salesRow[i + 1] as number)
@@ -84,7 +118,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
   }));
 
   const marginData = CHANNELS.map((ch, i) => ({
-    name: ch,
+    name: CHART_LABEL[ch] ?? ch,
     value: marginRow
       ? typeof marginRow[i + 1] === "number"
         ? (marginRow[i + 1] as number) * 100
@@ -99,7 +133,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
   }));
 
   const shareData = CHANNELS.map((ch, i) => ({
-    name: ch,
+    name: CHART_LABEL[ch] ?? ch,
     value: shareRow
       ? typeof shareRow[i + 1] === "number"
         ? Math.abs((shareRow[i + 1] as number) * 100)
@@ -132,12 +166,22 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
   const hasMarginData = marginData.some((d) => d.value !== 0);
   const hasStatesData = top10States.length > 0;
 
+  // Determine statewise sheet name (note trailing space variant)
+  const statewiseSheetName =
+    data["STATEWISE SALE "] !== undefined ? "STATEWISE SALE " : "STATEWISE SALE";
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7">
       {hasSalesData && (
         <ChartCard title="Channel-wise Net Sales">
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={salesData}>
+            <BarChart
+              data={salesData}
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                onDrillDown({ sheet: "% Sheet", searchTerm: "Sales (Rs.)" })
+              }
+            >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--border)"
@@ -148,6 +192,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                 tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
+                interval={0}
               />
               <YAxis
                 tickFormatter={(v) => fmtINR(v)}
@@ -160,7 +205,13 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                   <CustomTooltip formatter={(v) => fmtINR(v)} />
                 }
               />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+              <Bar
+                dataKey="value"
+                radius={[6, 6, 0, 0]}
+                onClick={() =>
+                  onDrillDown({ sheet: "% Sheet", searchTerm: "Sales (Rs.)" })
+                }
+              >
                 {salesData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
@@ -173,7 +224,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
       {hasShareData && (
         <ChartCard title="Sales Mix by Channel">
           <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
+            <PieChart style={{ cursor: "pointer" }}>
               <Pie
                 data={shareData.filter((d) => d.value > 0)}
                 cx="50%"
@@ -184,6 +235,12 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                 paddingAngle={2}
                 stroke="var(--surface)"
                 strokeWidth={2}
+                onClick={() =>
+                  onDrillDown({
+                    sheet: "% Sheet",
+                    searchTerm: "Share In Net Sale",
+                  })
+                }
               >
                 {shareData
                   .filter((d) => d.value > 0)
@@ -191,22 +248,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                     <Cell key={index} fill={entry.fill} />
                   ))}
               </Pie>
-              <Tooltip
-                formatter={(value: number) => [value.toFixed(1) + "%", "Share"]}
-                contentStyle={{
-                  background: "var(--surface2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                itemStyle={{
-                  color: "var(--foreground)",
-                }}
-                labelStyle={{
-                  color: "var(--text2)",
-                  marginBottom: "4px",
-                }}
-              />
+              <Tooltip content={<PieCustomTooltip />} />
               <Legend
                 wrapperStyle={{ fontSize: "11px", color: "var(--text2)" }}
                 iconSize={10}
@@ -219,7 +261,13 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
       {hasMarginData && (
         <ChartCard title="Channel-wise Margin %">
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={marginData}>
+            <BarChart
+              data={marginData}
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                onDrillDown({ sheet: "% Sheet", searchTerm: "Margin %" })
+              }
+            >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--border)"
@@ -230,6 +278,7 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                 tick={{ fontSize: 10, fill: "var(--text2)" }}
                 axisLine={false}
                 tickLine={false}
+                interval={0}
               />
               <YAxis
                 tickFormatter={(v) => v + "%"}
@@ -244,7 +293,13 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
                   />
                 }
               />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+              <Bar
+                dataKey="value"
+                radius={[6, 6, 0, 0]}
+                onClick={() =>
+                  onDrillDown({ sheet: "% Sheet", searchTerm: "Margin %" })
+                }
+              >
                 {marginData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
@@ -257,7 +312,21 @@ export function ChartsDashboard({ data }: ChartsDashboardProps) {
       {hasStatesData && (
         <ChartCard title="Top States by Net Sales (Amazon)">
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={top10States} layout="vertical">
+            <BarChart
+              data={top10States}
+              layout="vertical"
+              style={{ cursor: "pointer" }}
+              onClick={(chartData) => {
+                const stateName =
+                  chartData?.activePayload?.[0]?.payload?.name as
+                  | string
+                  | undefined;
+                onDrillDown({
+                  sheet: statewiseSheetName,
+                  searchTerm: stateName ?? "",
+                });
+              }}
+            >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--border)"

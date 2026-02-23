@@ -107,11 +107,11 @@ export function formatCell(val: CellValue): { text: string; type: string } {
       const fmt =
         val < 0
           ? "-\u20B9" +
-            Math.abs(val).toLocaleString("en-IN", {
-              maximumFractionDigits: 2,
-            })
+          Math.abs(val).toLocaleString("en-IN", {
+            maximumFractionDigits: 2,
+          })
           : "\u20B9" +
-            val.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+          val.toLocaleString("en-IN", { maximumFractionDigits: 2 });
       return { text: fmt, type: val < 0 ? "neg" : "pos" };
     }
     return {
@@ -121,4 +121,36 @@ export function formatCell(val: CellValue): { text: string; type: string } {
   }
 
   return { text: String(val), type: "" };
+}
+
+/**
+ * Converts period string to S3 key component
+ * e.g., "NOV 2025" -> "2025-11"
+ */
+export function periodToKey(period: string): string {
+  if (!period || period === "Financial Summary") return "latest";
+  const months: Record<string, string> = {
+    JAN: "01", FEB: "02", MAR: "03", APR: "04",
+    MAY: "05", JUN: "06", JUL: "07", AUG: "08",
+    SEP: "09", OCT: "10", NOV: "11", DEC: "12"
+  };
+  const [mStr, yStr] = period.split(" ");
+  const m = months[mStr.toUpperCase()] || "01";
+  return `${yStr}-${m}`;
+}
+
+/**
+ * Converts S3 key component back to period string
+ * e.g., "2025-11" -> "NOV 2025"
+ */
+export function keyToPeriod(key: string): string {
+  if (!key || key === "latest" || !key.includes("-")) return "Financial Summary";
+  const months: Record<string, string> = {
+    "01": "JAN", "02": "FEB", "03": "MAR", "04": "APR",
+    "05": "MAY", "06": "JUN", "07": "JUL", "08": "AUG",
+    "09": "SEP", "10": "OCT", "11": "NOV", "12": "DEC"
+  };
+  const [yStr, mStr] = key.split("-");
+  const m = months[mStr] || "JAN";
+  return `${m} ${yStr}`;
 }
