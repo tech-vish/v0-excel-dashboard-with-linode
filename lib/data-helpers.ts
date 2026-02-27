@@ -154,3 +154,40 @@ export function keyToPeriod(key: string): string {
   const m = months[mStr] || "JAN";
   return `${m} ${yStr}`;
 }
+
+/** Finds the P&L sheet (its name contains "P&L") in any SheetData */
+export function getPLSheet(data: SheetData): SheetRow[] {
+  for (const key of Object.keys(data)) {
+    if (/P&L/i.test(key)) return data[key];
+  }
+  return [];
+}
+
+/**
+ * Returns a stable short key for a sheet name so the same logical sheet
+ * can be matched across months (the P&L sheet embeds the month in its name).
+ */
+export function sheetShortKey(name: string): string {
+  // Normalise the P&L sheet: "IAV P&L NOV 2025" -> "IAV P&L"
+  const plMatch = name.match(/^(IAV P&L)/i);
+  if (plMatch) return "IAV P&L";
+  return name;
+}
+
+/**
+ * Finds a sheet by its stable short key (see sheetShortKey above).
+ */
+export function findSheetByShortKey(data: SheetData, shortKey: string): SheetRow[] {
+  for (const key of Object.keys(data)) {
+    if (sheetShortKey(key) === shortKey) return data[key];
+  }
+  return [];
+}
+
+/**
+ * Returns all stable short keys present in the given SheetData.
+ */
+export function getShortKeys(data: SheetData): string[] {
+  return Object.keys(data).map(sheetShortKey).filter((v, i, a) => a.indexOf(v) === i);
+}
+

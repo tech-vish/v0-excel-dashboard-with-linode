@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { LogOut } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { MonthSelector, MonthInfo } from "./month-selector";
 
@@ -10,6 +11,7 @@ interface TopBarProps {
   onMonthChange: (month: string) => void;
   loadingMonth?: string | null;
   loadedAt: string;
+  onLogout?: () => void;
 }
 
 export function TopBar({
@@ -17,7 +19,8 @@ export function TopBar({
   activeMonth,
   onMonthChange,
   loadingMonth,
-  loadedAt
+  loadedAt,
+  onLogout,
 }: TopBarProps) {
   return (
     <header className="flex flex-col border-b border-border bg-[var(--surface)] sticky top-0 z-50">
@@ -29,7 +32,7 @@ export function TopBar({
           Indian Art Villa
         </h1>
 
-        <div className="flex-1 max-w-[60%] overflow-hidden">
+        <div className="flex-1">
           <MonthSelector
             months={months}
             activeMonth={activeMonth}
@@ -43,6 +46,16 @@ export function TopBar({
             {loadedAt}
           </span>
           <ThemeToggle />
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Logout"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-[var(--surface)] transition-all"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Outfit, IBM_Plex_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
-import Image from 'next/image'
+import { IdeateBadge } from '@/components/ideate-badge'
 import './globals.css'
 
 const outfit = Outfit({
@@ -57,11 +57,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          {/* Ideate Consultancy fixed badge - bottom right */}
-          <div className="fixed bottom-4 right-4 z-[9999] flex items-center gap-3 bg-[var(--surface,#1a1d24)] border border-[var(--border,rgba(255,255,255,0.08))] rounded-xl px-4 py-2.5 shadow-lg backdrop-blur-sm opacity-90 hover:opacity-100 transition-opacity">
-            <Image src="/ideate.jpeg" alt="Ideate Consultancy" width={82} height={82} className="rounded-lg object-contain" />
-            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Presented by Ideate Consultancy</span>
-          </div>
+          <IdeateBadge />
         </ThemeProvider>
         <Analytics />
       </body>
